@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply font-body text-ink;
+}
+
+h1, h2, h3, .font-display {
+  font-family: "Fraunces", serif;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-ledger-700 text-paper hover:bg-ledger-800;
+  }
+  .btn-gold {
+    @apply btn bg-gold-500 text-ledger-900 hover:bg-gold-600;
+  }
+  .btn-outline {
+    @apply btn border border-ledger-700/30 text-ledger-800 hover:bg-ledger-50;
+  }
+  .btn-danger {
+    @apply btn bg-rust text-paper hover:bg-rust/90;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-ledger-50 hover:text-ink;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-card border border-ledger-900/5;
+  }
+  .input {
+    @apply w-full rounded-md border border-ledger-900/15 bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-gold-400;
+  }
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-muted mb-1;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
