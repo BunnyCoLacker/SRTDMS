@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: dms-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: "5000"
+      - key: MONGO_URI
+        value: mongodb://lianbugtai_db_user:N5JlYpfra6bbGkH0@ac-ks48bqx-shard-00-00.evjiy8q.mongodb.net:27017,ac-ks48bqx-shard-00-01.evjiy8q.mongodb.net:27017,ac-ks48bqx-shard-00-02.evjiy8q.mongodb.net:27017/?ssl=true&replicaSet=atlas-g8xys4-shard-0&authSource=admin&appName=Cluster0
+      - key: JWT_SECRET
+        value: change_this_to_a_long_random_secret_before_deploying
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_NAME
+        value: Admin One
+      - key: ADMIN_EMAIL
+        value: admin1@sarisaridms.com
+      - key: ADMIN_PASSWORD
+        value: Admin123!
+      - key: FRONTEND_URL
+        value: https://sarisaridms.netlify.app
+      - key: CLIENT_URL
+        value: https://sarisaridms.netlify.app
