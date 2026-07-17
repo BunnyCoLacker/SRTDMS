@@ -59,5 +59,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Server error", error: err.message });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`DMS API running on port ${PORT}`));
+const PORT = Number(process.env.PORT) || 5000;
+const HOST = process.env.HOST || "0.0.0.0";
+
+app.listen(PORT, HOST, () => {
+  console.log(`DMS API running on http://${HOST}:${PORT}`);
+});
