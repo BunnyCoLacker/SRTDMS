@@ -18,7 +18,9 @@ const ProtectedRoute = ({ children, role }) => {
   if (loading) return <Splash />;
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) {
-    return <Navigate to={user.role === "admin" ? "/admin" : "/store"} replace />;
+    return (
+      <Navigate to={user.role === "admin" ? "/admin" : "/store"} replace />
+    );
   }
   return children;
 };
@@ -32,7 +34,16 @@ function App() {
     <Routes>
       <Route
         path="/login"
-        element={user ? <Navigate to={user.role === "admin" ? "/admin" : "/store"} replace /> : <Login />}
+        element={
+          user ? (
+            <Navigate
+              to={user.role === "admin" ? "/admin" : "/store"}
+              replace
+            />
+          ) : (
+            <Login />
+          )
+        }
       />
       <Route
         path="/admin/*"
@@ -52,7 +63,12 @@ function App() {
       />
       <Route
         path="/"
-        element={<Navigate to={user ? (user.role === "admin" ? "/admin" : "/store") : "/login"} replace />}
+        element={
+          <Navigate
+            to={user ? (user.role === "admin" ? "/admin" : "/store") : "/login"}
+            replace
+          />
+        }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

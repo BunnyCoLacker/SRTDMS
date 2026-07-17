@@ -15,10 +15,9 @@ connectDB();
 
 const app = express();
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
+  process.env.VITE_API_URL,
 ].filter(Boolean);
 
 app.use(
@@ -27,7 +26,9 @@ app.use(
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
-        origin.endsWith(".netlify.app")
+        origin.endsWith(".netlify.app") ||
+        origin.endsWith(".vercel.app") ||
+        origin.endsWith(".github.dev")
       ) {
         callback(null, true);
         return;

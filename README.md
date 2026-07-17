@@ -68,7 +68,7 @@ Start the API:
 npm run dev
 ```
 
-The API runs locally on `http://127.0.0.1:5000` unless you override it with environment variables.
+The API uses your configured backend URL for deployment. Set `VITE_API_URL` and your backend environment variables to point to the hosted service.
 
 ## 2. Frontend setup
 
