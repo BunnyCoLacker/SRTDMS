@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Utang Ledger">
+  <rect width="64" height="64" rx="14" fill="#1f2937"/>
+  <path d="M18 20h28v8H18zM18 32h20v8H18zM18 44h24v8H18z" fill="#f5f1e8"/>
+  <circle cx="46" cy="36" r="8" fill="#d97706"/>
+</svg>
