@@ -15,30 +15,36 @@ connectDB();
 
 const app = express();
 const allowedOrigins = [
+  "https://sarisaridms.netlify.app",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
   process.env.VITE_API_URL,
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".netlify.app") ||
-        origin.endsWith(".vercel.app") ||
-        origin.endsWith(".github.dev")
-      ) {
-        callback(null, true);
-        return;
-      }
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
 
-      callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  }),
-);
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".netlify.app") ||
+      origin.endsWith(".vercel.app") ||
+      origin.endsWith(".github.dev");
+
+    callback(null, isAllowed);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
