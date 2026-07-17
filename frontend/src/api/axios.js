@@ -1,12 +1,19 @@
 import axios from "axios";
 
-const rawBaseUrl = import.meta.env.VITE_API_URL || "/api";
-const normalizedBaseUrl = rawBaseUrl.endsWith("/api")
-  ? rawBaseUrl
-  : `${rawBaseUrl.replace(/\/$/, "")}/api`;
+const getApiBaseUrl = () => {
+  const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.endsWith("/api")
+      ? configuredBaseUrl
+      : `${configuredBaseUrl.replace(/\/$/, "")}/api`;
+  }
+
+  return import.meta.env.PROD ? "https://dms-backend.onrender.com/api" : "/api";
+};
 
 const api = axios.create({
-  baseURL: normalizedBaseUrl,
+  baseURL: getApiBaseUrl(),
 });
 
 api.interceptors.request.use((config) => {
