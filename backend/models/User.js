@@ -4,14 +4,26 @@ import bcrypt from "bcryptjs";
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     password: { type: String, required: true, minlength: 6 },
-    role: { type: String, enum: ["admin", "store_owner"], default: "store_owner" },
+    role: {
+      type: String,
+      enum: ["admin", "store_owner"],
+      default: "store_owner",
+    },
     isActive: { type: Boolean, default: true }, // admin can disable a user's account
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: null },
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre("save", async function (next) {
@@ -26,8 +38,18 @@ userSchema.methods.comparePassword = function (candidate) {
 };
 
 userSchema.methods.toSafeObject = function () {
-  const { _id, name, email, role, isActive, isOnline, lastSeen, createdAt } = this;
-  return { id: _id, name, email, role, isActive, isOnline, lastSeen, createdAt };
+  const { _id, name, email, role, isActive, isOnline, lastSeen, createdAt } =
+    this;
+  return {
+    id: _id,
+    name,
+    email,
+    role,
+    isActive,
+    isOnline,
+    lastSeen,
+    createdAt,
+  };
 };
 
 export default mongoose.model("User", userSchema);
