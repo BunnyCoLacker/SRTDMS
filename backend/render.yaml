@@ -24,3 +24,11 @@ services:
         value: https://sarisaridms.netlify.app
       - key: CLIENT_URL
         value: https://sarisaridms.netlify.app
+  
+  - type: static_site
+    name: dms-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://dms-backend.onrender.com/api
