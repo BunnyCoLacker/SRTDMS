@@ -8,4 +8,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-'@ | Set-Content -Path netlify.toml -Encoding utf8
