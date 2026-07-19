@@ -2,13 +2,16 @@ import axios from "axios";
 
 const getApiBaseUrl = () => {
   // In production, always use the Render backend
-  if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
+  if (import.meta.env.PROD || window.location.hostname !== "localhost") {
     return "https://dms-backend.onrender.com/api";
   }
 
   // In development, use configured URL or default to local proxy
   const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();
-  if (configuredBaseUrl && configuredBaseUrl !== "https://dms-backend.onrender.com/api") {
+  if (
+    configuredBaseUrl &&
+    configuredBaseUrl !== "https://dms-backend.onrender.com/api"
+  ) {
     return configuredBaseUrl;
   }
 
