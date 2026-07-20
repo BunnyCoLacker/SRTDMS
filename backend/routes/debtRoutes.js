@@ -17,6 +17,8 @@ router.get("/", getDebts);
 router.get("/overdue", getOverdueDebts);
 router.post("/", createDebt);
 router.put("/:id/pay", payDebt);
+router.put("/:id/return-bottle", markBottleReturned);
+router.post("/pay-all", payAllDebts);
 router.delete("/:id", deleteDebt);
 
 export default router;

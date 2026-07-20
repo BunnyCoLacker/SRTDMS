@@ -12,7 +12,7 @@ export const getDebts = async (req, res) => {
 
   const debts = await DebtRecord.find(filter)
     .populate("borrower", "name status")
-    .sort({ dateBorrowed: -1 });
+    .sort({ createdAt: -1 });
 
   // refresh overdue status on read (in case due date passed since last save)
   const updated = await Promise.all(
@@ -65,7 +65,9 @@ export const createDebt = async (req, res) => {
     }
 
     const normalizedCategory =
-      category === "Beverages" ? "Beverages" : "Others";
+      String(category || "").toLowerCase() === "beverages"
+        ? "Beverages"
+        : "Others";
     const normalizedBottleType =
       normalizedCategory === "Beverages" &&
       (bottleType === "with_bottle" || bottleType === "without_bottle")
@@ -186,6 +188,108 @@ export const payDebt = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to process payment", error: err.message });
+  }
+};
+
+export const payAllDebts = async (req, res) => {
+  try {
+    const { borrowerId } = req.body;
+    if (!borrowerId) {
+      return res.status(400).json({ message: "borrowerId is required" });
+    }
+
+    const borrower = await Borrower.findOne({
+      _id: borrowerId,
+      storage: req.storage._id,
+    });
+    if (!borrower || borrower.status !== "active") {
+      return res.status(404).json({ message: "Active borrower not found" });
+    }
+
+    const debts = await DebtRecord.find({
+      borrower: borrower._id,
+      storage: req.storage._id,
+      status: { $ne: "paid" },
+    });
+
+    if (!debts.length) {
+      return res
+        .status(400)
+        .json({ message: "There is no outstanding debt to pay" });
+    }
+
+    let totalPaid = 0;
+    await Promise.all(
+      debts.map(async (debt) => {
+        const balance = debt.totalAmount - debt.amountPaid;
+        if (balance > 0) {
+          totalPaid += balance;
+          debt.amountPaid = debt.totalAmount;
+          debt.payments.push({ amount: balance });
+          await debt.save();
+        }
+      }),
+    );
+
+    await Transaction.create({
+      storage: req.storage._id,
+      borrower: borrower._id,
+      type: "bulk_payment",
+      amount: totalPaid,
+      description: `Full payment of ₱${totalPaid.toFixed(2)} received from ${borrower.name} for all debts`,
+      performedBy: req.user._id,
+    });
+
+    res.json({ message: "All debts marked paid", totalPaid });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to pay all debts", error: err.message });
+  }
+};
+
+export const markBottleReturned = async (req, res) => {
+  try {
+    const debt = await DebtRecord.findOne({
+      _id: req.params.id,
+      storage: req.storage._id,
+    });
+    if (!debt) {
+      return res.status(404).json({ message: "Debt record not found" });
+    }
+
+    if (debt.category !== "Beverages" || debt.bottleType !== "without_bottle") {
+      return res.status(400).json({
+        message:
+          "Returned bottle status only applies to beverages recorded without a bottle",
+      });
+    }
+
+    if (debt.bottleReturned) {
+      return res
+        .status(400)
+        .json({ message: "Returned bottle cannot be undone" });
+    }
+
+    debt.bottleReturned = true;
+    await debt.save();
+
+    const borrower = await Borrower.findById(debt.borrower);
+    await Transaction.create({
+      storage: req.storage._id,
+      borrower: debt.borrower,
+      debtRecord: debt._id,
+      type: "bottle_returned",
+      amount: 0,
+      description: `Bottle return recorded for ${debt.productName} from ${borrower?.name || "borrower"}`,
+      performedBy: req.user._id,
+    });
+
+    res.json(debt);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to mark bottle returned", error: err.message });
   }
 };
 

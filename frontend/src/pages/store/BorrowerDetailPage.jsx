@@ -27,13 +27,13 @@ export default function BorrowerDetailPage() {
     productName: "",
     category: "Others",
     bottleType: "",
-    bottleReturned: false,
     quantity: 1,
     unitPrice: "",
     dateBorrowed: "",
     dueInDays: 30,
   });
   const [payAmount, setPayAmount] = useState("");
+  const [isProcessingPayAll, setIsProcessingPayAll] = useState(false);
   const [error, setError] = useState("");
 
   const fetchAll = async () => {
@@ -69,18 +69,12 @@ export default function BorrowerDetailPage() {
         unitPrice: Number(debtForm.unitPrice),
         bottleType:
           debtForm.category === "Beverages" ? debtForm.bottleType : null,
-        bottleReturned:
-          debtForm.category === "Beverages" &&
-          debtForm.bottleType === "without_bottle"
-            ? debtForm.bottleReturned
-            : false,
       });
       setDebtModalOpen(false);
       setDebtForm({
         productName: "",
         category: "Others",
         bottleType: "",
-        bottleReturned: false,
         quantity: 1,
         unitPrice: "",
         dateBorrowed: "",
@@ -101,6 +95,29 @@ export default function BorrowerDetailPage() {
       });
       setPayModalOpen(null);
       setPayAmount("");
+      fetchAll();
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong");
+    }
+  };
+
+  const handlePayAll = async () => {
+    setError("");
+    setIsProcessingPayAll(true);
+    try {
+      await api.post("/debts/pay-all", { borrowerId: id });
+      fetchAll();
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong");
+    } finally {
+      setIsProcessingPayAll(false);
+    }
+  };
+
+  const handleMarkBottleReturned = async (debt) => {
+    setError("");
+    try {
+      await api.put(`/debts/${debt._id}/return-bottle`);
       fetchAll();
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
@@ -137,9 +154,22 @@ export default function BorrowerDetailPage() {
           )}
         </div>
         {borrower.status === "active" && (
-          <button className="btn-gold" onClick={() => setDebtModalOpen(true)}>
-            + Add debt
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="btn-outline"
+              onClick={handlePayAll}
+              disabled={isProcessingPayAll || borrower.balance <= 0}
+            >
+              {borrower.balance <= 0
+                ? "All debts paid"
+                : isProcessingPayAll
+                  ? "Processing…"
+                  : "Pay full balance"}
+            </button>
+            <button className="btn-gold" onClick={() => setDebtModalOpen(true)}>
+              + Add debt
+            </button>
+          </div>
         )}
       </div>
 
@@ -201,15 +231,37 @@ export default function BorrowerDetailPage() {
                     <td className="px-4 py-3 font-medium">{d.productName}</td>
                     <td className="px-4 py-3">{d.category || "Others"}</td>
                     <td className="px-4 py-3">
-                      {d.category === "Beverages"
-                        ? d.bottleReturned
-                          ? "Returned"
-                          : d.bottleType === "without_bottle"
-                            ? "Without bottle"
-                            : d.bottleType === "with_bottle"
-                              ? "With bottle"
-                              : "-"
-                        : "-"}
+                      {d.category === "Beverages" ? (
+                        d.bottleType === "without_bottle" ? (
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm">Without bottle</span>
+                            {d.bottleReturned ? (
+                              <div className="inline-flex h-7 w-20 items-center rounded-full bg-emerald-100 px-1 text-[10px] font-semibold text-emerald-700">
+                                <span className="ml-2">Yes</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkBottleReturned(d)}
+                                className="relative inline-flex h-7 w-20 items-center rounded-full bg-slate-300 px-1 text-[10px] font-semibold text-slate-700"
+                                aria-label="Mark bottle returned"
+                              >
+                                <span className="absolute left-2">No</span>
+                                <span className="absolute right-2 text-slate-700">
+                                  Yes
+                                </span>
+                                <span className="relative ml-1 inline-block h-5 w-5 rounded-full bg-white shadow transition-transform translate-x-0" />
+                              </button>
+                            )}
+                          </div>
+                        ) : d.bottleType === "with_bottle" ? (
+                          "With bottle"
+                        ) : (
+                          "-"
+                        )
+                      ) : (
+                        "-"
+                      )}
                     </td>
                     <td className="px-4 py-3">{d.quantity}</td>
                     <td className="px-4 py-3">{peso(d.totalAmount)}</td>
@@ -265,10 +317,6 @@ export default function BorrowerDetailPage() {
                   category: e.target.value,
                   bottleType:
                     e.target.value === "Beverages" ? debtForm.bottleType : "",
-                  bottleReturned:
-                    e.target.value === "Beverages"
-                      ? debtForm.bottleReturned
-                      : false,
                 })
               }
             >
@@ -297,10 +345,6 @@ export default function BorrowerDetailPage() {
                   setDebtForm({
                     ...debtForm,
                     bottleType: e.target.value,
-                    bottleReturned:
-                      e.target.value === "without_bottle"
-                        ? debtForm.bottleReturned
-                        : false,
                   })
                 }
               >
@@ -310,34 +354,6 @@ export default function BorrowerDetailPage() {
               </select>
             </div>
           )}
-          {debtForm.category === "Beverages" &&
-            debtForm.bottleType === "without_bottle" && (
-              <div className="rounded-lg border border-ledger-200 bg-ledger-50 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-ink">Returned bottle?</p>
-                    <p className="text-sm text-muted">
-                      This cannot be changed later once saved.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDebtForm({
-                        ...debtForm,
-                        bottleReturned: !debtForm.bottleReturned,
-                      })
-                    }
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${debtForm.bottleReturned ? "bg-ledger-700" : "bg-slate-300"}`}
-                    aria-pressed={debtForm.bottleReturned}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${debtForm.bottleReturned ? "translate-x-5" : "translate-x-1"}`}
-                    />
-                  </button>
-                </div>
-              </div>
-            )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Quantity</label>
