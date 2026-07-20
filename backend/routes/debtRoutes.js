@@ -4,6 +4,8 @@ import {
   getOverdueDebts,
   createDebt,
   payDebt,
+  payAllDebts,
+  markBottleReturned,
   deleteDebt,
 } from "../controllers/debtController.js";
 import { protect, storeOwnerOnly } from "../middleware/auth.js";
