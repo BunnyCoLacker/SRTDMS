@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import api from "../api/axios.js";
 
 const AuthContext = createContext(null);
@@ -47,6 +53,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Are you sure you want to log out?")
+    ) {
+      return false;
+    }
+
     try {
       await api.post("/auth/logout");
     } catch (_) {
@@ -55,10 +68,21 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("dms_token");
     setUser(null);
     setStorage(null);
+    return true;
   };
 
   return (
-    <AuthContext.Provider value={{ user, storage, loading, blockedMessage, login, logout, refresh: loadMe }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        storage,
+        loading,
+        blockedMessage,
+        login,
+        logout,
+        refresh: loadMe,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
