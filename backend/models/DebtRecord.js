@@ -5,14 +5,33 @@ const paymentSchema = new mongoose.Schema(
     amount: { type: Number, required: true, min: 0.01 },
     paidAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const debtRecordSchema = new mongoose.Schema(
   {
-    borrower: { type: mongoose.Schema.Types.ObjectId, ref: "Borrower", required: true },
-    storage: { type: mongoose.Schema.Types.ObjectId, ref: "Storage", required: true },
+    borrower: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Borrower",
+      required: true,
+    },
+    storage: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Storage",
+      required: true,
+    },
     productName: { type: String, required: true, trim: true },
+    category: {
+      type: String,
+      enum: ["Beverages", "Others"],
+      default: "Others",
+    },
+    bottleType: {
+      type: String,
+      enum: ["with_bottle", "without_bottle", null],
+      default: null,
+    },
+    bottleReturned: { type: Boolean, default: false },
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true, min: 0 },
     totalAmount: { type: Number, required: true, min: 0 }, // quantity * unitPrice
@@ -20,10 +39,18 @@ const debtRecordSchema = new mongoose.Schema(
     payments: [paymentSchema],
     dateBorrowed: { type: Date, required: true, default: Date.now },
     dueDate: { type: Date, required: true },
-    status: { type: String, enum: ["unpaid", "partial", "paid", "overdue"], default: "unpaid" },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    status: {
+      type: String,
+      enum: ["unpaid", "partial", "paid", "overdue"],
+      default: "unpaid",
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Keep status in sync whenever the doc is saved
