@@ -14,6 +14,7 @@ export default function BorrowersPage() {
   const [form, setForm] = useState({ name: "", contactNumber: "", notes: "" });
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("active");
+  const [search, setSearch] = useState("");
 
   const fetchBorrowers = async () => {
     setLoading(true);
@@ -54,9 +55,17 @@ export default function BorrowersPage() {
     fetchBorrowers();
   };
 
-  const visible = borrowers.filter((b) =>
-    filter === "all" ? true : b.status === filter,
-  );
+  const query = search.trim().toLowerCase();
+  const visible = borrowers.filter((b) => {
+    const matchesFilter = filter === "all" ? true : b.status === filter;
+    if (!matchesFilter) return false;
+    if (!query) return true;
+    const content = [b.name, b.contactNumber, b.notes]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return content.includes(query);
+  });
 
   return (
     <div>
@@ -72,16 +81,24 @@ export default function BorrowersPage() {
         </button>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {["active", "cancelled", "all"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`btn-outline !py-1.5 !px-3 text-xs capitalize ${filter === f ? "!bg-ledger-700 !text-paper" : ""}`}
-          >
-            {f}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <input
+          className="input flex-1 min-w-[220px]"
+          placeholder="Search borrowers..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="flex gap-2">
+          {["active", "cancelled", "all"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`btn-outline !py-1.5 !px-3 text-xs capitalize ${filter === f ? "!bg-ledger-700 !text-paper" : ""}`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (

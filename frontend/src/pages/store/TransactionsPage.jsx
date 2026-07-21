@@ -32,6 +32,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
+  const [search, setSearch] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,6 +48,22 @@ export default function TransactionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter]);
 
+  const query = search.trim().toLowerCase();
+  const visible = transactions.filter((t) => {
+    if (!query) return true;
+    const text = [
+      TYPE_LABELS[t.type],
+      t.borrower?.name,
+      t.description,
+      t.performedBy?.name,
+      t.amount ? peso(t.amount) : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return text.includes(query);
+  });
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -56,18 +73,26 @@ export default function TransactionsPage() {
             Review every debt and payment recorded in this storage.
           </p>
         </div>
-        <select
-          className="input !w-48"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-        >
-          <option value="">All types</option>
-          <option value="debt_created">Debt added</option>
-          <option value="payment">Payments</option>
-          <option value="bottle_returned">Bottle returned</option>
-          <option value="debt_cancelled">Debt cancelled</option>
-          <option value="borrower_cancelled">Borrower cancelled</option>
-        </select>
+        <div className="flex flex-wrap gap-2 items-center">
+          <input
+            className="input min-w-[220px]"
+            placeholder="Search transactions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="input !w-48"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="">All types</option>
+            <option value="debt_created">Debt added</option>
+            <option value="payment">Payments</option>
+            <option value="bottle_returned">Bottle returned</option>
+            <option value="debt_cancelled">Debt cancelled</option>
+            <option value="borrower_cancelled">Borrower cancelled</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -75,6 +100,10 @@ export default function TransactionsPage() {
       ) : transactions.length === 0 ? (
         <div className="card p-8 text-center text-muted">
           No transactions yet.
+        </div>
+      ) : visible.length === 0 ? (
+        <div className="card p-8 text-center text-muted">
+          No matching transactions.
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -91,7 +120,7 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((t) => (
+                {visible.map((t) => (
                   <tr key={t._id} className="border-t border-ink/5">
                     <td className="px-4 py-3">
                       <span
