@@ -26,52 +26,88 @@ const ProtectedRoute = ({ children, role }) => {
 };
 
 function App() {
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading,
+    showInactivityWarning,
+    countdownSeconds,
+    extendSession,
+    logout,
+  } = useAuth();
 
   if (loading) return <Splash />;
 
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          user ? (
+    <>
+      {showInactivityWarning && (
+        <div className="fixed inset-x-0 top-0 z-40 border-b border-amber-300 bg-amber-100 px-4 py-3 text-center text-sm text-amber-900 shadow-sm">
+          <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-2 sm:flex-row">
+            <span>
+              You’ve been inactive for a while. You’ll be signed out in{" "}
+              {countdownSeconds} second{countdownSeconds === 1 ? "" : "s"}.
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={extendSession}
+                className="rounded bg-amber-700 px-3 py-1 text-white hover:bg-amber-800"
+              >
+                Stay signed in
+              </button>
+              <button
+                onClick={() => logout(false)}
+                className="rounded border border-amber-700 px-3 py-1 text-amber-800 hover:bg-amber-200"
+              >
+                Sign out now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate
+                to={user.role === "admin" ? "/admin" : "/store"}
+                replace
+              />
+            ) : (
+              <Login />
+            )
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/store/*"
+          element={
+            <ProtectedRoute role="store_owner">
+              <StoreDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
             <Navigate
-              to={user.role === "admin" ? "/admin" : "/store"}
+              to={
+                user ? (user.role === "admin" ? "/admin" : "/store") : "/login"
+              }
               replace
             />
-          ) : (
-            <Login />
-          )
-        }
-      />
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute role="admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/store/*"
-        element={
-          <ProtectedRoute role="store_owner">
-            <StoreDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to={user ? (user.role === "admin" ? "/admin" : "/store") : "/login"}
-            replace
-          />
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 

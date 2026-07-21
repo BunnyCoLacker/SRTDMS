@@ -4,16 +4,31 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import api from "../api/axios.js";
 
 const AuthContext = createContext(null);
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+const WARNING_BEFORE_LOGOUT_MS = 60 * 1000;
+const ACTIVITY_EVENTS = [
+  "mousemove",
+  "keydown",
+  "mousedown",
+  "touchstart",
+  "scroll",
+  "click",
+];
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [storage, setStorage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [blockedMessage, setBlockedMessage] = useState("");
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(60);
+  const inactivityTimeoutRef = useRef(null);
+  const inactivityIntervalRef = useRef(null);
 
   const loadMe = useCallback(async () => {
     const token = localStorage.getItem("dms_token");
@@ -37,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     loadMe();
   }, [loadMe]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     setBlockedMessage("");
     try {
       const { data } = await api.post("/auth/login", { email, password });
@@ -50,14 +65,24 @@ export const AuthProvider = ({ children }) => {
       if (err.response?.data?.blocked) setBlockedMessage(message);
       return { success: false, message };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async (showConfirm = true) => {
     if (
+      showConfirm &&
       typeof window !== "undefined" &&
       !window.confirm("Are you sure you want to log out?")
     ) {
       return false;
+    }
+
+    if (inactivityTimeoutRef.current) {
+      window.clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
+    if (inactivityIntervalRef.current) {
+      window.clearInterval(inactivityIntervalRef.current);
+      inactivityIntervalRef.current = null;
     }
 
     try {
@@ -68,8 +93,78 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("dms_token");
     setUser(null);
     setStorage(null);
+    setShowInactivityWarning(false);
+    setCountdownSeconds(60);
     return true;
-  };
+  }, []);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimeoutRef.current) {
+      window.clearTimeout(inactivityTimeoutRef.current);
+    }
+    if (inactivityIntervalRef.current) {
+      window.clearInterval(inactivityIntervalRef.current);
+      inactivityIntervalRef.current = null;
+    }
+
+    setShowInactivityWarning(false);
+    setCountdownSeconds(60);
+
+    if (!user) return;
+
+    inactivityTimeoutRef.current = window.setTimeout(() => {
+      setShowInactivityWarning(true);
+      setCountdownSeconds(60);
+
+      inactivityIntervalRef.current = window.setInterval(() => {
+        setCountdownSeconds((prev) => {
+          if (prev <= 1) {
+            if (inactivityIntervalRef.current) {
+              window.clearInterval(inactivityIntervalRef.current);
+              inactivityIntervalRef.current = null;
+            }
+            logout(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }, INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_LOGOUT_MS);
+  }, [logout, user]);
+
+  useEffect(() => {
+    if (!user) {
+      setShowInactivityWarning(false);
+      setCountdownSeconds(60);
+      return;
+    }
+
+    const handleActivity = () => resetInactivityTimer();
+
+    ACTIVITY_EVENTS.forEach((eventName) => {
+      window.addEventListener(eventName, handleActivity, { passive: true });
+    });
+
+    resetInactivityTimer();
+
+    return () => {
+      ACTIVITY_EVENTS.forEach((eventName) => {
+        window.removeEventListener(eventName, handleActivity);
+      });
+      if (inactivityTimeoutRef.current) {
+        window.clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
+      if (inactivityIntervalRef.current) {
+        window.clearInterval(inactivityIntervalRef.current);
+        inactivityIntervalRef.current = null;
+      }
+    };
+  }, [resetInactivityTimer, user]);
+
+  const extendSession = useCallback(() => {
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
 
   return (
     <AuthContext.Provider
@@ -78,8 +173,11 @@ export const AuthProvider = ({ children }) => {
         storage,
         loading,
         blockedMessage,
+        showInactivityWarning,
+        countdownSeconds,
         login,
         logout,
+        extendSession,
         refresh: loadMe,
       }}
     >
